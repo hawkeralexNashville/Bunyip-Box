@@ -4,7 +4,7 @@
 
 Private Facebook content research, analytics, and curation application
 
-> **Version 2.1**
+> **Version 2.2**
 > Prepared for implementation with OpenAI Codex, GitHub, and DigitalOcean App Platform
 > Date: September 26, 2026
 
@@ -28,8 +28,8 @@ Build incrementally. Verify external platform capabilities before coding against
 | Core stack                   | Next.js + TypeScript + PostgreSQL + Prisma.                                                                                                                                      |
 | Background processing        | DigitalOcean worker plus PostgreSQL-backed durable jobs; scheduled DigitalOcean jobs enqueue periodic synchronization and reconciliation work.                                   |
 | Facebook access              | Official Meta Graph API only. Prove both development capability and production eligibility before implementing each Facebook feature.                                            |
-| MVP scope                    | Lists, tracked Pages, ingestion, post analytics, sorting/filtering/search, saved posts, CSV export, freshness/status visibility, cloud staging, automated tests.                 |
-| Explicitly excluded          | Scheduling/publishing, AI caption generation, billing, teams/organizations, email delivery, native mobile apps, non-Facebook social networks.                                    |
+| MVP scope                    | Multi-user workspaces, per-List Viewer/Manager access, secure link-based invitations, Lists, tracked Pages, ingestion, analytics, saved posts, CSV export, official branding, cloud staging, automated tests. |
+| Explicitly excluded          | Scheduling/publishing, AI caption generation, billing, outbound email delivery, native mobile apps, non-Facebook social networks.                                                 |
 
 | **Source of truth:** For Facebook-specific capabilities, the current Meta Graph API behavior observed with the approved app and token is authoritative. If a required capability is unavailable, Bunyip Box must surface the limitation rather than scrape, circumvent, or silently substitute behavior. |
 |----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -44,14 +44,14 @@ Build incrementally. Verify external platform capabilities before coding against
 | 5\. Environments, domain, and canonical URLs          | 16\. Historical metric snapshots                    | 27\. Security requirements                           |
 | 6\. Codex onboarding and DigitalOcean setup           | 17\. List detail screen                             | 28\. Testing and CI                                  |
 | 7\. Secrets and configuration                         | 18\. Top Posts                                      | 29\. Deployment, migrations, and backups             |
-| 8\. Authentication, account model, and user ownership | 19\. Simple post grade                              | 30\. MVP acceptance criteria                         |
+| 8\. Authentication, workspaces, and authorization     | 19\. Simple post grade                              | 30\. MVP acceptance criteria                         |
 | 9\. Lists dashboard                                   | 20\. Saved Posts                                    | 31\. Build order                                     |
 | 10\. Adding and managing Facebook Pages               | 21\. Search, pagination, and performance            | 32\. Implementation principles for Codex             |
 | 11\. Meta API implementation gates                    | 22\. CSV export                                     | 33\. First instruction to Codex                      |
 
 # 1. Product objective
 
-Build a private web application named Bunyip Box for discovering and analyzing high-performing posts from selected public Facebook Pages. The primary use case is content curation: the user organizes Pages into lists, Bunyip Box ingests the post and engagement data available through the official Meta Graph API, and the user finds the strongest posts for a selected publication period.
+Build a private, multi-user web application named Bunyip Box for discovering and analyzing high-performing posts from selected public Facebook Pages. The primary use case is content curation: users collaborate within a workspace while organizing Pages into Lists, Bunyip Box ingests the post and engagement data available through the official Meta Graph API, and each authorized user finds the strongest posts for a selected publication period. Workspace Owners control membership and explicit per-List access.
 
 The supplied Strevio screenshots are visual and information-architecture references only. Do not copy Strevio branding, proprietary code, or reproduce its interface pixel-for-pixel. Bunyip Box must have its own visual identity while preserving the functional clarity of a modern analytics dashboard.
 
@@ -88,7 +88,11 @@ The intended formula is reactions/likes + comments + shares when all three compo
 
 - Secure private authentication and owner bootstrap flow.
 
-- User-created lists of tracked Facebook Pages.
+- Multi-user workspaces with one Owner, workspace memberships, and secure link-based invitations that do not require outbound email.
+
+- Workspace-owned Lists with explicit Viewer or Manager permissions for regular team members.
+
+- Official reusable Bunyip Box logo and mark assets across application, authentication, public/legal, favicon, and appropriate icon surfaces.
 
 - Meta-supported Page lookup/input and Page metadata.
 
@@ -118,9 +122,9 @@ The intended formula is reactions/likes + comments + shares when all three compo
 
 - Billing, subscriptions, payment processing, or plan enforcement.
 
-- Teams, organizations, role hierarchies, or shared workspaces.
-
 - Email sending, transactional email, or email verification.
+
+- Additional workspace roles or List permission levels beyond Owner, Viewer, and Manager.
 
 - Native iOS or Android applications.
 
@@ -134,6 +138,7 @@ The intended formula is reactions/likes + comments + shares when all three compo
 | Database             | PostgreSQL                                          |
 | ORM                  | Prisma                                              |
 | Authentication       | Secure credentials-based sessions                   |
+| Authorization        | Workspace membership plus server-enforced per-List role checks |
 | Web hosting          | DigitalOcean App Platform service                   |
 | Background ingestion | DigitalOcean App Platform worker                    |
 | Scheduling           | DigitalOcean scheduled jobs that enqueue sync work  |
@@ -161,6 +166,10 @@ The application must run completely in DigitalOcean. The owner does not intend t
 - Interactive dashboard views must query PostgreSQL, not repeatedly call Facebook in real time.
 
 - Facebook-specific logic must live behind a service layer so API versions and fields can be changed without rewriting the product UI.
+
+- Authorization must be centralized and default-deny. Every List-scoped query, mutation, export, background action, and related-resource lookup must resolve the authenticated user's workspace membership and effective List permission on the server.
+
+- Model workspace and List roles as extensible values/relations rather than scattering Owner/Viewer/Manager conditionals, so future roles can be introduced without redesigning the core schema.
 
 - Long-running ingestion work must be resumable, idempotent, observable, and isolated by Page.
 
@@ -207,6 +216,18 @@ Bunyip Box is the customer-facing product/brand. Bunyip Box is not a separate le
 Throughout the normal application UI, use Bunyip Box as the primary brand. Users should generally see Bunyip Box rather than Hawker Works LLC except where legal ownership, compliance, billing/contact identity, or business verification is relevant.
 
 The public website and appropriate authenticated application pages must include a visible footer using substantially the following ownership language: © {current year} Hawker Works LLC. Bunyip Box is a product of Hawker Works LLC. Generate the year dynamically where practical rather than hard-coding 2026.
+
+### Official brand artwork
+
+Official supplied Bunyip Box artwork is the sole visual source of truth. Store reusable assets in a dedicated repository location, preferably `public/brand/`, using descriptive names such as `bunyip-box-logo.svg`, `bunyip-box-logo.png`, `bunyip-box-mark.svg`, and `bunyip-box-mark.png` according to the formats actually supplied.
+
+- Use the full logo where horizontal space allows, including appropriate login/account-creation, public/legal, and application navigation/header surfaces.
+- Use the standalone mark for the favicon and browser/app icons where appropriate. Derived favicon and browser icon sizes may be generated from the official source artwork.
+- Keep dashboard branding clean and restrained; do not make the logo unnecessarily large.
+- Do not redraw or AI-generate the Bunyip, change its colors or proportions, or add visual elements to the artwork.
+- Preserve the distinction between brand and legal entity: Bunyip Box is the product/brand; Hawker Works LLC owns and operates it.
+
+Official asset files will be supplied before branding implementation begins. Do not create substitutes while they are unavailable.
 
 ### Public legal and compliance pages
 
@@ -301,13 +322,13 @@ Never commit secrets, credentials, private tokens, or .env files to GitHub. Use 
 
 Never expose META_APP_SECRET, Meta access tokens, database credentials, or AUTH_SECRET to browser JavaScript. Never print access tokens or secrets in application logs, sync errors, or debugging output.
 
-# 8. Authentication, account model, and user ownership
+# 8. Authentication, workspaces, and authorization
 
 ## 8.1 Owner bootstrap
 
-Because Bunyip Box is initially a private application, do not leave unrestricted public signup permanently enabled. When the user table is empty, provide a one-time Create Owner Account flow with Name, Email, Password, and Confirm Password. After the first owner account is created, disable open public registration by default.
+Because Bunyip Box is a private application, do not leave unrestricted public signup permanently enabled. When no initial workspace exists, provide a one-time Create Owner Account flow with Name, Email, Password, and Confirm Password. Creating the account must atomically create a workspace, make that user its Owner, and establish the corresponding workspace membership. After initial bootstrap, disable open public registration by default; subsequent users join through valid invitations.
 
-If another account is needed during MVP, use an explicit protected administrative creation procedure. Email invitations and email verification remain out of scope.
+The Owner cannot be removed, demoted, or have their implicit access revoked through normal MVP controls. Any future ownership-transfer flow must be explicit and atomic so a workspace can never be left without an Owner.
 
 ## 8.2 Login and sessions
 
@@ -327,29 +348,57 @@ If another account is needed during MVP, use an explicit protected administrativ
 
 Do not build an email-based password-reset flow in MVP because email infrastructure is intentionally excluded. Document a safe administrative/manual reset procedure for the initial private deployment.
 
-## 8.4 User-owned versus shared data
+## 8.4 Workspace and List authorization model
 
-Lists, saved posts, private notes, and user preferences such as timezone are user-owned records and must include user ownership/authorization checks. Facebook Page and Facebook post records should be globally deduplicated in the database so the same public Page or post is not stored repeatedly for different lists or users.
+- Every List belongs to exactly one workspace. Lists are not owned by individual members.
+- Every participating user has a workspace membership. The MVP workspace role is Owner or Member, represented in a way that permits additional workspace roles later.
+- The Owner has implicit access to every List and alone can create, rename, or delete Lists; add or remove members; and assign, change, or revoke List permissions.
+- Each regular member has no List access by default. Access requires an explicit List permission of Viewer or Manager.
+- Viewer permits viewing the List, Page analytics, and Top Posts; searching, sorting, and filtering; opening original Facebook posts; and exporting permitted List data to CSV.
+- Manager includes every Viewer capability and additionally permits adding/removing Facebook Pages and managing appropriate List configuration. It does not permit List creation/deletion, workspace membership management, or permission assignment.
+- Authorization is enforced server-side for routes, server actions, APIs, queries, mutations, exports, Posts, Pages, jobs, and every other List-scoped or indirectly related resource. Hiding navigation is not an authorization control.
+- A request using a guessed/modified List or related-resource ID must not reveal data or perform an action without sufficient permission. Use a consistent not-found or forbidden response policy that avoids unnecessary resource disclosure.
+- Shared, globally deduplicated Facebook Page and post records must only be reachable through at least one List the user is authorized to access. Global source-data deduplication never grants visibility.
 
-## 8.5 Timezone preference
+## 8.5 Secure team invitation design
+
+Outbound email remains outside MVP. Before invitation implementation, Codex must document the final design and threat model; the implementation must preserve these minimum properties:
+
+1. The Owner enters the intended recipient's email and optional name, selects initial List permissions if supported by the flow, and creates an invitation for that workspace.
+2. The server generates at least 256 bits of cryptographically secure random token material. Only a one-way hash of the token is stored; the plaintext appears solely in the copyable invitation URL returned at creation.
+3. The invitation stores workspace, normalized intended email, creator, expiry, creation time, and single-use redemption/revocation state. Default expiry should be short and configurable (initially seven days).
+4. The Owner manually shares the HTTPS link and can view pending invitations, revoke them, or create a replacement. The UI must warn that anyone holding the link may attempt redemption and that it should be shared securely.
+5. Redemption requires login or account creation. The authenticated account's normalized email must match the invitation email. Because email delivery/verification is unavailable, the Owner is responsible for confirming the intended address and sharing the secret link securely; this limitation must be documented in the UI and security notes.
+6. Redemption validates the token hash, workspace, email match, expiry, revocation, and unused state, then atomically creates/associates the membership and marks the invitation used. Concurrent or repeated redemption must fail safely.
+7. Tokens must never be logged, exposed in analytics/referrers, stored in plaintext, or accepted after use, revocation, or expiry. The redemption page should apply a restrictive referrer policy, avoid third-party resources, and be rate-limited.
+
+Initial List permissions may be attached to the invitation or assigned after membership creation, but they take effect only after successful redemption. Invitation possession alone grants no workspace or List access.
+
+## 8.6 Personal versus shared data
+
+Saved posts, private notes, and user preferences such as timezone belong to the individual user. Saved state and notes remain private by default, including between users who can access the same List. Facebook Page and Facebook post records may be globally deduplicated, but access to them must always be authorized through an accessible List.
+
+## 8.7 Timezone preference
 
 Add a minimal Settings screen or equivalent profile setting for timezone. Default to America/Chicago. Date boundaries for Today, Yesterday, Last 7 Days, and custom dates must use the user's configured timezone while timestamps in the database should be stored in UTC.
 
 # 9. Lists dashboard
 
-After login, land on a Lists Dashboard. Display the number of unique Facebook Pages currently tracked for the authenticated user and all user-created lists. Do not impose an artificial list or Page-count limit in application logic.
+After login, land on a Lists Dashboard. The Owner sees every List in the workspace; a regular member sees only Lists with an explicit permission assignment. Display the number of unique Facebook Pages reachable through those visible Lists. Do not impose an artificial list or Page-count limit in application logic.
 
 Example lists include Country Music, Nashville, Michigan, Tennessee News, and Competitors.
 
 ## 9.1 List operations
 
-- Create list
+- Create list (Owner only)
 
-- Rename list
+- Rename list (Owner only)
 
-- Delete list with confirmation
+- Delete list with confirmation (Owner only)
 
 - Open list
+
+Provide Owner-only team management UI to add/invite and remove members, inspect pending invitations, and grant, change, or revoke Viewer/Manager access for each List. Manager users may manage Pages and appropriate configuration only within assigned Lists; Viewer users receive read/export access only.
 
 Deleting a list must not delete the underlying Facebook Page or historical post data if that Page is used by another list or user. User-visible membership is removed; shared source data remains governed by the Page lifecycle rules in Section 10.3.
 
@@ -360,6 +409,8 @@ For the selected publication period, a list may show number of Pages, total reac
 # 10. Adding and managing Facebook Pages
 
 Inside a list, provide Add Page to Track. The desired experience is to search for a Facebook Page, select it, and add it to the list. The exact lookup mechanism must only be implemented if the verified Meta app/token supports it. If general Page search is unavailable, implement the closest compliant flow such as a verified Facebook Page URL or Page ID lookup.
+
+Only the workspace Owner or a member with Manager permission for that List may add or remove Pages. Viewer access is read-only. Enforce these rules on the server for both direct List operations and underlying Page relationship mutations.
 
 Where available through the verified API, store/display Page name, profile image, Facebook Page ID, follower count, and other necessary public metadata. Do not claim a field is supported until the exact endpoint and permission are proven.
 
@@ -617,7 +668,7 @@ Because the primary purpose is curation, provide a bookmark/save action on every
 
 Allow an optional private note on a saved post, for example: Good Nashville To Do article idea - research this.
 
-A saved item must retain a relationship to the stored Facebook post rather than duplicating the entire post record. Saved state and notes are user-owned and must not be visible to other users unless a future collaboration feature explicitly adds sharing.
+A saved item must retain a relationship to the stored Facebook post rather than duplicating the entire post record. Saved state and notes are user-owned and must not be visible to the workspace Owner or other members merely because they share access to a List. A future explicit sharing feature may change this behavior, but must not weaken the private default.
 
 # 21. Search, pagination, and performance
 
@@ -625,7 +676,7 @@ Do not load thousands of posts into the browser at once. Use server-side paginat
 
 Default: 50 posts per page. Options: 25, 50, 100.
 
-Core queries must be indexed for posts from Pages in List X, published between dates Y and Z, ordered by the chosen metric. At minimum, index Facebook post ID, Facebook Page ID, created_time, available engagement fields, list membership joins, and user/list ownership keys.
+Core queries must be indexed for posts from Pages in List X, published between dates Y and Z, ordered by the chosen metric. At minimum, index Facebook post ID, Facebook Page ID, created_time, available engagement fields, list membership joins, and workspace/List authorization join keys.
 
 Pagination queries must have deterministic secondary ordering. If early scale makes offset pagination acceptable, keep the data-access layer structured so it can move to cursor/keyset pagination without rewriting the UI contract.
 
@@ -669,7 +720,7 @@ Always make data freshness visible so stale API data is not mistaken for poor po
 
 ## 23.1 Protected System Status screen
 
-Provide an authenticated owner/admin System Status screen. It should show the configured Meta Graph API version, Meta connection/token health at a safe summary level, last successful scheduled enqueue run, number of queued/running/failed jobs, Pages currently importing, recent sync failures, and manual retry controls where appropriate.
+Provide an authenticated Owner-only System Status screen. It should show the configured Meta Graph API version, Meta connection/token health at a safe summary level, last successful scheduled enqueue run, number of queued/running/failed jobs, Pages currently importing, recent sync failures, and manual retry controls where appropriate.
 
 Do not display secrets, raw access tokens, app secret values, database credentials, or excessive raw response bodies on this screen.
 
@@ -693,6 +744,8 @@ Primary target is desktop. The application should remain usable on tablet/mobile
 
 Use the supplied Strevio screenshots only as functional references for hierarchy: list overview, list detail, Top Posts, date selection, sorting controls, post cards, and metrics. The resulting interface must use Bunyip Box branding and its own visual identity.
 
+Use the supplied official full logo and standalone mark according to Section 5.3. Branding must be reusable and consistent across the navigation/header, login and account creation, public/legal pages, favicon, and browser/app icons. Keep the authenticated dashboard treatment restrained. Permission-aware navigation may omit unavailable actions for clarity, but the server remains the security boundary.
+
 ## 25.1 Baseline accessibility
 
 - Use semantic headings, labels, buttons, links, and table markup.
@@ -713,9 +766,13 @@ The exact Prisma schema may evolve during implementation, but the MVP must suppo
 
 | **Model**             | **Purpose / key constraints**                                                               |
 |-----------------------|---------------------------------------------------------------------------------------------|
-| users                 | Owner/user identity, email unique, password hash, timezone, timestamps.                     |
+| users                 | User identity, normalized unique email, password hash, timezone, timestamps.                |
 | sessions              | If required by chosen auth implementation; securely associated with users.                  |
-| lists                 | User-owned list with name and timestamps.                                                   |
+| workspaces            | Account/workspace identity, name, timestamps, and guaranteed Owner relationship.            |
+| workspace_memberships | User-to-workspace membership with extensible workspace role and unique workspace + user.    |
+| workspace_invitations | Hashed single-use token, intended email, workspace, creator, expiry/revocation/use metadata. |
+| lists                 | Workspace-owned List with name and timestamps; unique naming policy defined per workspace.  |
+| list_permissions      | Explicit member-to-List Viewer/Manager role; unique list + membership (or equivalent).      |
 | facebook_pages        | Single deduplicated record per Facebook Page ID; metadata and sync lifecycle.               |
 | list_pages            | Many-to-many membership; unique list_id + facebook_page_id.                                 |
 | facebook_posts        | Single deduplicated record per Facebook post ID; latest known metrics and availability.     |
@@ -726,7 +783,7 @@ The exact Prisma schema may evolve during implementation, but the MVP must suppo
 | sync_errors           | Sanitized meaningful error details associated with jobs/runs.                               |
 | system_settings       | Optional server-side settings only if configuration cannot remain in environment variables. |
 
-Use proper foreign keys, unique constraints, timestamps, and indexes. Authorization queries must include user ownership where appropriate. Source-data records may be globally shared, but user-specific relationships must never leak across accounts.
+Use proper foreign keys, unique constraints, timestamps, and indexes. A cleaner equivalent Prisma design is acceptable if it preserves the domain relationships and behavior. Authorization queries must scope through workspace membership and effective List access. Source-data records may be globally shared, but workspace- and user-specific relationships must never leak across authorization boundaries. Deleting or removing memberships and Lists must have explicit referential behavior that cannot leave usable orphaned permissions.
 
 For sortable Total Engagement, use an efficient database/query implementation appropriate to PostgreSQL. Do not repeatedly compute expensive unindexed expressions over an unbounded result set if a generated/stored value or suitable index is warranted by measured scale. Preserve null semantics when any required component is unavailable.
 
@@ -737,6 +794,14 @@ For sortable Total Engagement, use an efficient database/query implementation ap
 - Use secure HTTP-only session cookies and appropriate SameSite/Secure settings.
 
 - Protect every authenticated route and enforce authorization server-side, not only in the UI.
+
+- Default-deny every List-scoped operation. Resolve workspace membership and minimum effective List role before accessing the List or related Pages, Posts, analytics, saved-item source records, jobs, or exports; never trust a client-supplied workspace, role, or ownership claim.
+
+- Prevent horizontal privilege escalation through manual URLs, modified identifiers, direct API/server-action calls, and indirect related-resource identifiers. Apply the same authorization policy to reads and writes.
+
+- Owners must retain implicit access to all workspace Lists and cannot remove/demote themselves or otherwise leave the workspace ownerless through normal MVP operations.
+
+- Invitation tokens must have high entropy, be stored only as hashes, expire, be single-use and revocable, use constant-time-safe verification where the chosen library requires it, and be redacted from logs and telemetry. Redemption must be atomic and rate-limited.
 
 - Implement CSRF protection where applicable to the chosen authentication architecture.
 
@@ -770,11 +835,17 @@ Codex must not treat a page rendering in the browser as sufficient proof of corr
 
 - Unit tests for date-window calculations, engagement aggregation, grade boundaries, missing-metric behavior, and CSV escaping/formula neutralization.
 
-- Integration tests for list ownership/authorization, save/unsave behavior, Page lifecycle, and database upserts.
+- Integration tests for workspace/List authorization, save/unsave behavior, Page lifecycle, and database upserts.
+
+- Authorization-matrix integration tests covering Owner, Manager, Viewer, unassigned workspace member, and non-member behavior for List reads/writes, Page management, analytics, Top Posts, search/filter/sort, CSV exports, and related-resource endpoints. Tests must prove URL/ID tampering and direct API calls cannot access unauthorized Lists, Posts, Pages, exports, or jobs.
+
+- Invitation tests for cryptographic token generation/storage, intended-email matching, expiry, revocation, one-time atomic redemption, concurrent redemption, rate limiting, and assurance that invitation possession alone grants no access.
+
+- Privacy tests proving saved posts and private notes are visible only to their owning user even when multiple users share a List.
 
 - Ingestion tests proving idempotency, checkpoint/resume behavior, retry handling, and no duplicate posts after repeated syncs.
 
-- Authentication tests for owner bootstrap, login, protected routes, logout, and disabled public signup after bootstrap.
+- Authentication tests for atomic workspace/Owner bootstrap, invited account creation/association, login, protected routes, logout, owner lockout prevention, and disabled public signup after bootstrap.
 
 - A small end-to-end smoke test covering login → list → Page shell → Top Posts using test fixtures or staging-safe data.
 
@@ -814,7 +885,7 @@ Perform at least one staging restore or recovery rehearsal before declaring back
 
 ## 29.4 README requirements
 
-The repository README.md must cover architecture, staging/production URLs, required environment variables, domain/DNS setup, public Privacy Policy/Terms/Data Deletion URLs, the permanent Bunyip Box → Hawker Works LLC ownership relationship, DigitalOcean deployment, database migrations, Meta capability verification, ingestion/job architecture, test/CI workflow, troubleshooting, backup/restore procedures, and how to change sync configuration safely.
+The repository README.md must cover architecture, staging/production URLs, required environment variables, domain/DNS setup, public Privacy Policy/Terms/Data Deletion URLs, the permanent Bunyip Box → Hawker Works LLC ownership relationship, official brand-asset location/usage, workspace and permission architecture, secure no-email invitation design, DigitalOcean deployment, database migrations, Meta capability verification, ingestion/job architecture, test/CI workflow, troubleshooting, backup/restore procedures, and how to change sync configuration safely.
 
 # 30. MVP acceptance criteria
 
@@ -828,7 +899,7 @@ The repository README.md must cover architecture, staging/production URLs, requi
 
 5. Verify the public site/app footer visibly states that Bunyip Box is a product of Hawker Works LLC and uses a dynamically generated current year where practical.
 
-6. On a fresh database, create the one-time owner account without email verification.
+6. On a fresh database, create the one-time Owner account without email verification and verify its workspace and Owner membership are created atomically.
 
 7. Verify public owner signup is no longer available after bootstrap.
 
@@ -836,69 +907,87 @@ The repository README.md must cover architecture, staging/production URLs, requi
 
 9. Set or confirm the user timezone.
 
-10. Create a list called Country Music.
+10. As Owner, create a List called Country Music and verify the Owner cannot lock themselves out of it or the workspace.
 
-11. Add three Facebook Pages using the Meta-supported lookup/input flow.
+11. Create a secure invitation for a team member, copy its expiring link without sending email, and redeem it using the intended account/email.
 
-12. Verify one underlying Facebook Page record is reused if the same Page is added to another list.
+12. Verify the invitation cannot be reused and that expired, revoked, wrong-email, and concurrently redeemed invitations fail safely.
 
-13. See each newly tracked Page enter Queued/Importing and later Ready state while historical ingestion happens asynchronously.
+13. Grant the member Viewer access to Country Music and no access to a second List; verify only Country Music is visible and its read/search/sort/filter/original-link/export capabilities work.
 
-14. Close or navigate away from the browser during an import and verify the import continues.
+14. Verify the Viewer cannot create/rename/delete Lists, manage membership/permissions, or add/remove Pages.
 
-15. Restart/redeploy the web application during a queued/importing scenario and verify durable job state is not lost.
+15. Change the member to Manager and verify Page management and appropriate List configuration are allowed, while Owner-only actions remain denied.
 
-16. See the last successful data refresh time.
+16. Revoke the permission and verify the member immediately loses all server-side access to the List and its related Posts, Pages, analytics, exports, and jobs.
 
-17. Open Country Music and select Last 7 Days.
+17. Verify unassigned members and non-members cannot gain access through a manual URL, modified List/related-resource ID, or direct API/server-action request.
 
-18. Verify the date range selects posts by published date using the configured timezone.
+18. Verify saved posts and private notes remain private between the Owner and team member even while both can access the same List.
 
-19. Sort Pages by available engagement metrics and Posts.
+19. Verify official supplied logo/mark assets are used without artwork changes in the header/navigation, authentication, public/legal, favicon, and appropriate browser/app icon surfaces.
 
-20. Open Top Posts and see actual stored Facebook posts and available engagement metrics.
+20. Add three Facebook Pages using the Meta-supported lookup/input flow.
 
-21. Sort posts by Reactions/Likes, Comments, Shares, Total Engagement where valid, and Newest.
+21. Verify one underlying Facebook Page record is reused if the same Page is added to another List without leaking it to unauthorized users.
 
-22. Verify missing metrics display as unavailable rather than zero.
+22. See each newly tracked Page enter Queued/Importing and later Ready state while historical ingestion happens asynchronously.
 
-23. Search post text and Page name.
+23. Close or navigate away from the browser during an import and verify the import continues.
 
-24. Save a post and add an optional private note.
+24. Restart/redeploy the web application during a queued/importing scenario and verify durable job state is not lost.
 
-25. Open the original post on Facebook when a permalink is available.
+25. See the last successful data refresh time.
 
-26. Export all matching posts for the selected timeframe to CSV.
+26. Open Country Music and select Last 7 Days.
 
-27. Verify the export includes the complete filtered result set, not just the visible page.
+27. Verify the date range selects posts by published date using the configured timezone.
 
-28. Verify CSV formula-triggering post text is neutralized safely.
+28. Sort Pages by available engagement metrics and Posts.
 
-29. See a useful failed-sync state and retry option when a Page sync fails.
+29. Open Top Posts and see actual stored Facebook posts and available engagement metrics.
 
-30. See queued/running/failed job information on the protected System Status screen.
+30. Sort posts by Reactions/Likes, Comments, Shares, Total Engagement where valid, and Newest.
 
-31. Remove a Page from one list and verify it remains active if another list still uses it.
+31. Verify missing metrics display as unavailable rather than zero.
 
-32. Remove a Page from its final list and verify historical data remains while routine sync becomes inactive.
+32. Search post text and Page name.
 
-33. Log out and verify protected routes are no longer accessible.
+33. Save a post and add an optional private note.
 
-34. Return later and find lists, saved posts, notes, and historical data intact.
+34. Open the original post on Facebook when a permalink is available.
 
-35. Verify staging and production use separate databases and secrets.
+35. Export all matching posts for the selected timeframe to CSV.
 
-36. Verify required CI checks pass before the production promotion.
+36. Verify the export includes the complete filtered result set, not just the visible page.
 
-37. Verify the documented backup/restore procedure in staging.
+37. Verify CSV formula-triggering post text is neutralized safely.
+
+38. See a useful failed-sync state and retry option when a Page sync fails.
+
+39. See queued/running/failed job information on the protected System Status screen.
+
+40. Remove a Page from one list and verify it remains active if another list still uses it.
+
+41. Remove a Page from its final list and verify historical data remains while routine sync becomes inactive.
+
+42. Log out and verify protected routes are no longer accessible.
+
+43. Return later and find lists, saved posts, notes, and historical data intact.
+
+44. Verify staging and production use separate databases and secrets.
+
+45. Verify required CI checks pass before the production promotion.
+
+46. Verify the documented backup/restore procedure in staging.
 
 # 31. Build order
 
 | **Milestone**               | **Scope**                                                                                                                                                                                                                                                        |
 |-----------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 1\. Infrastructure + domain | GitHub repo, DigitalOcean project, minimal production Next.js deployment, custom Bunyip Box domain + HTTPS, public Privacy Policy/Terms/Data Deletion pages, Hawker Works LLC ownership footer, staging app, deployment documentation.                           |
-| 2\. Foundation              | Separate PostgreSQL environments, Prisma, pre-deploy migrations, authentication, owner bootstrap, timezone setting, core database model.                                                                                                                         |
-| 3\. Lists/UI                | Lists dashboard, list CRUD, Page-management shell, responsive Bunyip Box visual identity.                                                                                                                                                                        |
+| 2\. Foundation              | Before coding, document the final invitation threat model/design and permission matrix. Then add separate PostgreSQL environments, Prisma/migrations, users, workspaces, memberships, workspace-scoped Lists, extensible List permissions, hashed invitation records, authentication, atomic Owner/workspace bootstrap, invitation redemption, timezone, and centralized server authorization with automated isolation tests. Do not begin Meta integration. |
+| 3\. Lists/UI                | Owner team/invitation and per-List permission management, permission-aware dashboard and List CRUD, Page-management shell, and responsive UI using the supplied official logo/mark assets without altering the artwork.                                              |
 | 4\. Meta proof of concept   | Guide owner through Meta Developer setup. Use Bunyip Box as the product/app name and Hawker Works LLC as the legal business. Prove development capabilities, business/production eligibility, and required public compliance surfaces before coding integration. |
 | 5\. Job system + ingestion  | Durable sync_jobs, worker, scheduled enqueuing, 90-day backfill, checkpoints, statuses, incremental sync, snapshots, retry/error logging.                                                                                                                        |
 | 6\. Curation UI             | List analytics, date ranges, sorting, Top Posts, search, grades, Saved Posts, null/unavailable metric treatment.                                                                                                                                                 |
@@ -912,7 +1001,13 @@ The repository README.md must cover architecture, staging/production URLs, requi
 
 - Do not invent Meta API behavior. Verify both technical capability and production eligibility first.
 
-- Do not add scheduling/publishing, AI generation, billing, teams, or additional social networks unless explicitly requested later.
+- Do not add scheduling/publishing, AI generation, billing, outbound email, additional roles beyond the MVP permission model, or additional social networks unless explicitly requested later.
+
+- Treat workspace membership and server-side per-List authorization as foundational boundaries. Default deny, centralize checks, and authorize every direct and indirect List-scoped resource.
+
+- Keep saved posts and private notes personal to their user unless a future explicit sharing requirement is approved.
+
+- Use only owner-supplied official Bunyip Box artwork. Never redraw, recolor, distort, decorate, or AI-generate a replacement.
 
 - Prefer simple, maintainable implementation over premature complexity.
 
