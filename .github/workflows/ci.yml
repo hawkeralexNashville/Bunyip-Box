@@ -8,6 +8,9 @@ on:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://ci:ci@localhost:5432/bunyip_box_ci
+      DIRECT_URL: postgresql://ci:ci@localhost:5432/bunyip_box_ci
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -16,6 +19,8 @@ jobs:
       # Milestone 1 was bootstrapped in a restricted environment. Replace this
       # with `npm ci` as soon as the first networked install commits package-lock.json.
       - run: npm install --no-audit --no-fund
+      - run: npm run db:generate
+      - run: npm run db:validate
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run build
