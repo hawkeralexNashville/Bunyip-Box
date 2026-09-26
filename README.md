@@ -102,6 +102,14 @@ The pages intentionally do not invent a support email. Before public launch, Haw
 
 Feature branch → pull request and CI → `develop` → staging smoke test → intentional release pull request → `main` → production. Production is not an experimental environment. Milestone 2 will add separate PostgreSQL resources and pre-deploy Prisma migrations only after this foundation is verified.
 
+## Milestone 2 security design
+
+The implementation contract for authentication, workspace and per-List
+authorization, personal-data isolation, and secure no-email invitations is in
+[`docs/milestone-2-security-design.md`](docs/milestone-2-security-design.md).
+Milestone 2 database and authentication work must preserve that document's
+default-deny permission matrix and invitation threat-model controls.
+
 ## Configuration
 
 | Variable | Milestone 1 use |
