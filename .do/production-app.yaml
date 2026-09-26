@@ -1,0 +1,24 @@
+# Template only: replace the repository placeholder before importing this spec.
+name: bunyip-box-production
+region: nyc
+services:
+  - name: web
+    github:
+      repo: YOUR_GITHUB_ACCOUNT/Bunyip-Box
+      branch: main
+      deploy_on_push: true
+    environment_slug: node-js
+    build_command: npm install --no-audit --no-fund && npm run build
+    run_command: npm start
+    http_port: 8080
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-0.5gb
+    health_check:
+      http_path: /
+    envs:
+      - key: NODE_ENV
+        value: production
+        scope: RUN_AND_BUILD_TIME
+      - key: APP_URL
+        value: SET_AFTER_CUSTOM_DOMAIN_IS_VERIFIED
+        scope: RUN_TIME
