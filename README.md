@@ -10,6 +10,8 @@ Bunyip Box is a private content research and curation product owned and operated
 - GitHub Actions checks for lint, type checking, and production build.
 - Prisma schema and migrations for the Milestone 2 identity, workspace, List,
   session, and invitation foundation.
+- A minimal `/api/health/database` readiness endpoint that reports only
+  `ok`/`unavailable`, never connection details or query errors.
 
 ## Local verification (for contributors and CI)
 
@@ -132,6 +134,11 @@ same isolated pre-deploy job. In that job, both database URLs use its encrypted
 direct administrative connection; the web service retains only its pooled
 runtime URL. Production and staging must use different clusters, databases,
 users, pools, and values for all database configuration.
+
+`GET /api/health/database` performs a server-side `SELECT 1` through the web
+service's runtime pool. It returns HTTP 200 with `{"status":"ok"}` or HTTP 503
+with `{"status":"unavailable"}`, disables response caching, and intentionally
+does not expose database identifiers or errors.
 
 ## Configuration
 
