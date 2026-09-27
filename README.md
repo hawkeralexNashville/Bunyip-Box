@@ -21,6 +21,7 @@ The owner does not need to maintain a local environment; these commands are for 
 npm install --no-audit --no-fund
 npm run lint
 npm run typecheck
+npm run test:authorization
 npm run build
 npm run db:validate
 npm start
@@ -162,4 +163,4 @@ Store values in DigitalOcean environment configuration. Never commit `.env` file
 
 ## Deferred by design
 
-Authentication UI, owner bootstrap, team-management UI, jobs, backups, and every Meta capability remain deferred until their Milestone 2 implementation steps. Meta setup or integration must not begin until the application foundation and authorization model are complete.
+Team-management UI, jobs, backups, and every Meta capability remain deferred until their Milestone 2 implementation steps. Meta setup or integration must not begin until the application foundation and authorization model are complete.
