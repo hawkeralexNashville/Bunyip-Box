@@ -79,7 +79,6 @@ export async function createWorkspaceInvitation(input: {
         expiresAt,
         listPermissions: {
           create: assignments.map(({ listId, role }) => ({
-            workspaceId: input.workspaceId,
             listId,
             role,
           })),

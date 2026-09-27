@@ -56,7 +56,7 @@ test("PostgreSQL invitation redemption is email-bound, expiring, revocable, atom
         expiresAt: options.expiresAt ?? new Date(Date.now() + INVITATION_EXPIRY_DAYS * 86_400_000),
         revokedAt: options.revokedAt,
         listPermissions: options.listId ? {
-          create: { workspaceId, listId: options.listId, role: "VIEWER" },
+          create: { listId: options.listId, role: "VIEWER" },
         } : undefined,
       },
     });
