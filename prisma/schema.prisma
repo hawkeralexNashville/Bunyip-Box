@@ -135,6 +135,17 @@ model WorkspaceInvitation {
   @@map("workspace_invitations")
 }
 
+model InvitationRedemptionAttempt {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tokenHash          String   @db.Char(64)
+  attemptedEmailHash String?  @db.Char(64)
+  succeeded          Boolean  @default(false)
+  attemptedAt        DateTime @default(now())
+
+  @@index([tokenHash, attemptedAt], map: "invitation_redemption_attempts_token_hash_attempted_at_idx")
+  @@map("invitation_redemption_attempts")
+}
+
 model InvitationListPermission {
   invitationId String @db.Uuid
   workspaceId  String @db.Uuid

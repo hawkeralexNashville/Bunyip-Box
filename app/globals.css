@@ -28,6 +28,19 @@
   font: inherit;
 }
 
+.team-page { margin: 3rem auto 7rem; max-width: 74rem; padding: 0 2rem; }
+.team-page > h1 { font-size: clamp(3rem, 7vw, 6rem); margin: 0; }
+.team-grid, .redeem-grid { display: grid; gap: 1.5rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.team-card { background: var(--cream); border: 1px solid var(--line); padding: 1.5rem; }
+.team-card h2, .redeem-grid h2 { font-size: 1.8rem; }
+.auth-form fieldset { border: 1px solid var(--line); display: grid; gap: .75rem; padding: 1rem; }
+.auth-form select, .invitation-result input { font: inherit; padding: .65rem; }
+.invitation-result { background: var(--mint); display: grid; gap: .5rem; padding: 1rem; }
+.invitation-list { display: grid; gap: 1rem; list-style: none; padding: 0; }
+.invitation-list li { border-top: 1px solid var(--line); display: grid; gap: .65rem; padding-top: 1rem; }
+.invitation-list span { display: block; }
+.invitation-inline { display: grid; gap: .5rem; }
+
 .auth-form {
   display: grid;
   gap: 1rem;
@@ -113,6 +126,7 @@ h1, h2, h3 { font-family: Georgia, 'Times New Roman', serif; font-weight: 500; l
 .legal-content li { margin-bottom: 10px; padding-left: 8px; }
 :focus-visible { outline: 3px solid var(--coral); outline-offset: 4px; }
 @media (max-width: 760px) {
+  .team-grid, .redeem-grid { grid-template-columns: 1fr; }
   .hero { grid-template-columns: 1fr; padding-top: 50px; }
   .signal-card { justify-self: center; }
   .principle-grid { grid-template-columns: 1fr; }

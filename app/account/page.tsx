@@ -1,13 +1,19 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 import { logout } from "@/app/auth-actions";
 import { getCurrentUser } from "@/lib/auth/session";
+import { database } from "@/lib/database";
 
 export const dynamic = "force-dynamic";
 
 export default async function AccountPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  const ownsWorkspace = Boolean(await database.workspaceMembership.findFirst({
+    where: { userId: user.id, role: "OWNER" },
+    select: { id: true },
+  }));
 
   return (
     <section className="panel auth-panel account-panel">
@@ -22,6 +28,9 @@ export default async function AccountPage() {
           Sign out
         </button>
       </form>
+      {ownsWorkspace ? (
+        <Link className="button button-primary" href="/team">Manage team invitations</Link>
+      ) : null}
     </section>
   );
 }

@@ -22,6 +22,7 @@ npm install --no-audit --no-fund
 npm run lint
 npm run typecheck
 npm run test:authorization
+npm run test:invitations
 npm run build
 npm run db:validate
 npm start
@@ -140,6 +141,22 @@ users, pools, and values for all database configuration.
 service's runtime pool. It returns HTTP 200 with `{"status":"ok"}` or HTTP 503
 with `{"status":"unavailable"}`, disables response caching, and intentionally
 does not expose database identifiers or errors.
+
+## Secure team invitations
+
+Workspace Owners manage invitations at `/team`. Invitation links contain 256
+bits of random token material, expire after seven days, and are displayed only
+when created or replaced. PostgreSQL stores only a domain-separated token hash.
+Creating a replacement revokes earlier pending invitations for the same
+workspace and normalized email, while explicit revocation leaves any already
+redeemed membership unchanged.
+
+The `/invite/[token]` redemption route supports an existing account or
+invitation-bound account creation. Redemption requires an exact normalized
+email match and atomically consumes the invitation, creates or associates the
+Member workspace membership, and applies initial Viewer/Manager permissions.
+The route sends `no-referrer`, `noindex`, and `no-store` headers and records
+only hashed signals for its bounded attempt limiter.
 
 ## Configuration
 
