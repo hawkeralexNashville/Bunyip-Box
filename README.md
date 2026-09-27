@@ -121,11 +121,17 @@ Prisma uses two environment-specific PostgreSQL connections:
   application.
 - `DIRECT_URL` is the encrypted direct administrative connection used only by
   the controlled `prisma migrate deploy` deployment step.
+- `RUNTIME_DATABASE_USER` is the non-secret, environment-specific PostgreSQL
+  role that receives only the schema usage and data access needed by the web
+  application after migrations run.
 
 Never run development migrations against staging or production. Create and
 review migration SQL in the repository, then apply checked-in migrations with
-`npm run db:migrate:deploy`. Production and staging must use different
-clusters, databases, users, pools, and values for both variables.
+`npm run db:migrate:deploy`, followed by `npm run db:grant:runtime` from the
+same isolated pre-deploy job. In that job, both database URLs use its encrypted
+direct administrative connection; the web service retains only its pooled
+runtime URL. Production and staging must use different clusters, databases,
+users, pools, and values for all database configuration.
 
 ## Configuration
 
@@ -135,6 +141,7 @@ clusters, databases, users, pools, and values for both variables.
 | `NODE_ENV` | `production` in deployed applications. |
 | `DATABASE_URL` | Encrypted environment-specific pooled runtime PostgreSQL URL. |
 | `DIRECT_URL` | Encrypted environment-specific direct migration PostgreSQL URL; never exposed to runtime browser code. |
+| `RUNTIME_DATABASE_USER` | Non-secret database role name that receives runtime grants after migrations. |
 
 Store values in DigitalOcean environment configuration. Never commit `.env` files or credentials. Authentication and Meta variables are introduced only with the features that require them.
 

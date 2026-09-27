@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
-    "db:migrate:deploy": "prisma migrate deploy"
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:grant:runtime": "node scripts/grant-runtime-database-access.mjs"
   },
   "dependencies": {
     "@prisma/client": "6.16.2",
