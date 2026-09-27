@@ -2,11 +2,14 @@ import { notFound, redirect } from "next/navigation";
 
 import { getCurrentUser } from "@/lib/auth/session";
 import { database } from "@/lib/database";
+import { ActionForm } from "@/app/action-form";
 
 import {
   createInvitationAction,
   replaceInvitationAction,
   revokeInvitationAction,
+  removeMemberAction,
+  setListPermissionAction,
 } from "./actions";
 import { InvitationForm } from "./invitation-form";
 
@@ -27,6 +30,15 @@ export default async function TeamPage() {
             where: { revokedAt: null, redeemedAt: null, expiresAt: { gt: new Date() } },
             orderBy: { createdAt: "desc" },
             select: { id: true, intendedEmail: true, intendedName: true, expiresAt: true },
+          },
+          memberships: {
+            orderBy: { createdAt: "asc" },
+            select: {
+              id: true,
+              role: true,
+              user: { select: { name: true, email: true } },
+              listPermissions: { select: { listId: true, role: true } },
+            },
           },
         },
       },
@@ -89,6 +101,38 @@ export default async function TeamPage() {
               ))}
             </ul>
           ) : <p>No pending invitations.</p>}
+        </div>
+      </div>
+
+      <div className="team-card member-card">
+        <h2>Active members</h2>
+        <p>List access changes take effect immediately. Owner access is permanent and implicit.</p>
+        <div className="member-list">
+          {workspace.memberships.map((member) => (
+            <article key={member.id}>
+              <div><strong>{member.user.name}</strong><span>{member.user.email}</span><span className="role-badge">{member.role}</span></div>
+              {member.role === "OWNER" ? <p>Access to every List</p> : (
+                <div className="permission-grid">
+                  {workspace.lists.map((list) => {
+                    const permission = member.listPermissions.find((item) => item.listId === list.id)?.role ?? "NONE";
+                    return (
+                      <ActionForm action={setListPermissionAction} key={list.id} submitLabel="Update access">
+                        <input name="workspaceId" type="hidden" value={workspace.id} />
+                        <input name="membershipId" type="hidden" value={member.id} />
+                        <input name="listId" type="hidden" value={list.id} />
+                        <label>{list.name}<select name="role" defaultValue={permission}><option value="NONE">No access</option><option value="VIEWER">Viewer</option><option value="MANAGER">Manager</option></select></label>
+                      </ActionForm>
+                    );
+                  })}
+                  <ActionForm action={removeMemberAction} className="inline-form danger-zone" submitLabel="Remove member">
+                    <input name="workspaceId" type="hidden" value={workspace.id} />
+                    <input name="membershipId" type="hidden" value={member.id} />
+                    <p>Remove this member and all of their List permissions.</p>
+                  </ActionForm>
+                </div>
+              )}
+            </article>
+          ))}
         </div>
       </div>
     </section>

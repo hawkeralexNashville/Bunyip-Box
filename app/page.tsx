@@ -17,7 +17,7 @@ export default async function Home() {
             public content and turning a busy feed into a useful library.
           </p>
           <div className="hero-actions">
-            <Link className="button button-primary" href={user ? "/account" : "/login"}>
+            <Link className="button button-primary" href={user ? "/lists" : "/login"}>
               {user ? "Open your workspace" : "Sign in"}
             </Link>
             <Link className="button button-secondary" href="/privacy">How we handle data</Link>

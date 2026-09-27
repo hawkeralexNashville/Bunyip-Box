@@ -74,7 +74,7 @@ export async function bootstrapOwner(
   }
 
   await createSession(userId);
-  redirect("/account");
+  redirect("/lists");
 }
 
 export async function login(
@@ -96,7 +96,7 @@ export async function login(
   }
 
   await createSession(user.id);
-  redirect("/account");
+  redirect("/lists");
 }
 
 export async function logout(): Promise<void> {

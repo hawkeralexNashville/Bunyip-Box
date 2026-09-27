@@ -87,10 +87,38 @@ model List {
   workspace            Workspace                  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   permissions          ListPermission[]
   invitationPermissions InvitationListPermission[]
+  pages                 ListPage[]
 
   @@unique([workspaceId, name], map: "lists_workspace_id_name_key")
   @@unique([id, workspaceId], map: "lists_id_workspace_id_key")
   @@map("lists")
+}
+
+model FacebookPage {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  facebookPageId String   @unique(map: "facebook_pages_facebook_page_id_key")
+  name           String
+  profileImageUrl String?
+  followerCount  Int?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  lists ListPage[]
+
+  @@map("facebook_pages")
+}
+
+model ListPage {
+  listId         String   @db.Uuid
+  facebookPageId String   @db.Uuid
+  createdAt      DateTime @default(now())
+
+  list         List         @relation(fields: [listId], references: [id], onDelete: Cascade)
+  facebookPage FacebookPage @relation(fields: [facebookPageId], references: [id], onDelete: Restrict)
+
+  @@id([listId, facebookPageId])
+  @@index([facebookPageId], map: "list_pages_facebook_page_id_idx")
+  @@map("list_pages")
 }
 
 model ListPermission {

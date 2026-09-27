@@ -26,6 +26,7 @@ jobs:
       DATABASE_URL: postgresql://ci:ci@localhost:5432/bunyip_box_ci
       DIRECT_URL: postgresql://ci:ci@localhost:5432/bunyip_box_ci
       INVITATION_TEST_DATABASE_URL: postgresql://ci:ci@localhost:5432/bunyip_box_ci
+      LISTS_TEST_DATABASE_URL: postgresql://ci:ci@localhost:5432/bunyip_box_ci
       RUNTIME_DATABASE_USER: bunyip_box_ci
     steps:
       - uses: actions/checkout@v4
@@ -42,4 +43,5 @@ jobs:
       - run: npm run typecheck
       - run: npm run test:authorization
       - run: npm run test:invitations
+      - run: npm run test:lists
       - run: npm run build

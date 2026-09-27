@@ -31,6 +31,7 @@ export default async function AccountPage() {
       {ownsWorkspace ? (
         <Link className="button button-primary" href="/team">Manage team invitations</Link>
       ) : null}
+      <Link className="button button-secondary" href="/lists">Open Lists</Link>
     </section>
   );
 }

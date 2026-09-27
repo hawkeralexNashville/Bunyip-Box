@@ -79,5 +79,5 @@ export async function redeemInvitationAction(
   } catch {
     return { error: GENERIC_ERROR };
   }
-  redirect("/account");
+  redirect("/lists");
 }

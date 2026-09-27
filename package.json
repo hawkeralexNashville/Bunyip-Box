@@ -14,6 +14,7 @@
     "typecheck": "tsc --noEmit",
     "test:authorization": "node --no-warnings --experimental-strip-types --test tests/authorization-policy.test.mjs",
     "test:invitations": "node --no-warnings --experimental-strip-types --test tests/invitation-security.test.mjs",
+    "test:lists": "node --no-warnings --experimental-strip-types --test tests/lists-team.test.mjs",
     "db:generate": "prisma generate",
     "db:validate": "prisma validate",
     "db:migrate:deploy": "prisma migrate deploy",

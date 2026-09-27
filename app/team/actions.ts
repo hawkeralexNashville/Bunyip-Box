@@ -4,11 +4,13 @@ import { revalidatePath } from "next/cache";
 
 import { getCurrentUser } from "@/lib/auth/session";
 import { database } from "@/lib/database";
+import type { FormActionState } from "@/app/action-form";
 import {
   createWorkspaceInvitation,
   revokeWorkspaceInvitation,
   type InitialListPermission,
 } from "@/lib/invitations/service";
+import { removeWorkspaceMember, setListPermission } from "@/lib/team/service";
 
 export type InvitationActionState = { error: string | null; invitationUrl: string | null };
 
@@ -98,4 +100,46 @@ export async function revokeInvitationAction(formData: FormData): Promise<void> 
   if (!user) return;
   await revokeWorkspaceInvitation(user.id, String(formData.get("invitationId") ?? ""));
   revalidatePath("/team");
+}
+
+export async function setListPermissionAction(
+  _state: FormActionState,
+  formData: FormData,
+): Promise<FormActionState> {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Please sign in again." };
+  try {
+    await setListPermission(
+      user.id,
+      String(formData.get("workspaceId") ?? ""),
+      String(formData.get("membershipId") ?? ""),
+      String(formData.get("listId") ?? ""),
+      String(formData.get("role") ?? ""),
+    );
+    revalidatePath("/team");
+    revalidatePath("/lists");
+    return { error: null };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Permission could not be changed." };
+  }
+}
+
+export async function removeMemberAction(
+  _state: FormActionState,
+  formData: FormData,
+): Promise<FormActionState> {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Please sign in again." };
+  try {
+    await removeWorkspaceMember(
+      user.id,
+      String(formData.get("workspaceId") ?? ""),
+      String(formData.get("membershipId") ?? ""),
+    );
+    revalidatePath("/team");
+    revalidatePath("/lists");
+    return { error: null };
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : "Member could not be removed." };
+  }
 }

@@ -1,6 +1,6 @@
 # Bunyip Box
 
-Bunyip Box is a private content research and curation product owned and operated by **Hawker Works LLC**. Milestone 1 established the minimal application and isolated DigitalOcean environments. Milestone 2 is adding the PostgreSQL, Prisma, authentication, workspace, and authorization foundation. Meta integration remains deliberately deferred.
+Bunyip Box is a private content research and curation product owned and operated by **Hawker Works LLC**. The application includes its PostgreSQL/Prisma security foundation and a permission-aware Lists and team-management UI. Meta integration remains deliberately deferred.
 
 ## Current architecture
 
@@ -12,6 +12,8 @@ Bunyip Box is a private content research and curation product owned and operated
   session, and invitation foundation.
 - A minimal `/api/health/database` readiness endpoint that reports only
   `ok`/`unavailable`, never connection details or query errors.
+- An authenticated `/lists` dashboard, Owner-only List CRUD, team permission
+  management, and a deliberately disconnected Page-management shell.
 
 ## Local verification (for contributors and CI)
 
@@ -23,6 +25,7 @@ npm run lint
 npm run typecheck
 npm run test:authorization
 npm run test:invitations
+npm run test:lists
 npm run build
 npm run db:validate
 npm start
@@ -183,4 +186,7 @@ Store values in DigitalOcean environment configuration. Never commit `.env` file
 
 ## Deferred by design
 
-Team-management UI, jobs, backups, and every Meta capability remain deferred until their Milestone 2 implementation steps. Meta setup or integration must not begin until the application foundation and authorization model are complete.
+Meta API integration, ingestion jobs, analytics, Top Posts, Saved Posts, and
+operational backup tooling remain deferred to their later milestones. The Page
+area intentionally reports that Meta is not connected rather than displaying
+placeholder source data.
