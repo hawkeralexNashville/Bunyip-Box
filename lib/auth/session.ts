@@ -8,7 +8,7 @@ import { database } from "@/lib/database";
 const SESSION_COOKIE = "bunyip_session";
 const SESSION_DAYS = 30;
 
-function sessionSecret(): string {
+export function assertSessionConfiguration(): string {
   const secret = process.env.AUTH_SECRET;
   if (!secret || secret.length < 32) {
     throw new Error("AUTH_SECRET must contain at least 32 characters.");
@@ -17,7 +17,7 @@ function sessionSecret(): string {
 }
 
 function hashSessionToken(token: string): string {
-  return createHmac("sha256", sessionSecret()).update(token).digest("hex");
+  return createHmac("sha256", assertSessionConfiguration()).update(token).digest("hex");
 }
 
 export async function createSession(userId: string): Promise<void> {

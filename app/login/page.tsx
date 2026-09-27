@@ -2,12 +2,14 @@ import { redirect } from "next/navigation";
 
 import { login } from "@/app/auth-actions";
 import { AuthForm } from "@/app/auth-form";
+import { getCurrentUser } from "@/lib/auth/session";
 import { database } from "@/lib/database";
 
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage() {
   if ((await database.workspace.count()) === 0) redirect("/setup");
+  if (await getCurrentUser()) redirect("/account");
 
   return (
     <main>

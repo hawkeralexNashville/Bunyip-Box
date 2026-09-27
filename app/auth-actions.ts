@@ -8,7 +8,11 @@ import {
   validatePassword,
   verifyPassword,
 } from "@/lib/auth/credentials";
-import { createSession, deleteSession } from "@/lib/auth/session";
+import {
+  assertSessionConfiguration,
+  createSession,
+  deleteSession,
+} from "@/lib/auth/session";
 import { database } from "@/lib/database";
 
 export type AuthActionState = { error: string | null };
@@ -31,6 +35,9 @@ export async function bootstrapOwner(
   if (password !== confirmation) return { error: "Passwords do not match." };
   const passwordError = validatePassword(password);
   if (passwordError) return { error: passwordError };
+
+  // Fail before creating the one-time owner records if sessions are misconfigured.
+  assertSessionConfiguration();
 
   const normalizedEmail = normalizeEmail(email);
   const passwordHash = await hashPassword(password);
@@ -67,13 +74,14 @@ export async function bootstrapOwner(
   }
 
   await createSession(userId);
-  redirect("/");
+  redirect("/account");
 }
 
 export async function login(
   _state: AuthActionState,
   formData: FormData,
 ): Promise<AuthActionState> {
+  assertSessionConfiguration();
   const email = normalizeEmail(String(formData.get("email") ?? ""));
   const password = String(formData.get("password") ?? "");
   const user = await database.user.findUnique({ where: { normalizedEmail: email } });
@@ -88,7 +96,7 @@ export async function login(
   }
 
   await createSession(user.id);
-  redirect("/");
+  redirect("/account");
 }
 
 export async function logout(): Promise<void> {
