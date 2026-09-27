@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import type { ReactNode } from "react";
 import { product } from "./config";
 import "./globals.css";
@@ -7,6 +8,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: { default: product.name, template: `%s | ${product.name}` },
   description: product.description,
+  icons: { icon: "/brand/bunyip-box-mark.png", apple: "/brand/bunyip-box-mark.png" },
 };
 
 function Footer() {
@@ -31,10 +33,10 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       <body>
         <header className="site-header">
           <Link className="brand" href="/" aria-label={`${product.name} home`}>
-            <span className="brand-mark" aria-hidden="true">B</span>
+            <Image className="brand-image" src="/brand/bunyip-box-mark.png" alt="" width={40} height={40} priority />
             <span>{product.name}</span>
           </Link>
-          <span className="stage-pill">Foundation</span>
+          <nav className="app-nav" aria-label="Application"><Link href="/lists">Lists</Link><Link href="/team">Team</Link><Link href="/account">Account</Link></nav>
         </header>
         <main>{children}</main>
         <Footer />
@@ -42,4 +44,3 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
     </html>
   );
 }
-

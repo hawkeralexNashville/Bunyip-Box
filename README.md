@@ -1,6 +1,6 @@
 # Bunyip Box
 
-Bunyip Box is a private content research and curation product owned and operated by **Hawker Works LLC**. This repository currently contains **Milestone 1 only**: a minimal Next.js application, public compliance pages, CI, and DigitalOcean deployment templates. It deliberately contains no database, authentication, worker, or Meta integration.
+Bunyip Box is a private content research and curation product owned and operated by **Hawker Works LLC**. The application includes its PostgreSQL/Prisma security foundation and a permission-aware Lists and team-management UI. Meta integration remains deliberately deferred.
 
 ## Current architecture
 
@@ -8,6 +8,12 @@ Bunyip Box is a private content research and curation product owned and operated
 - DigitalOcean App Platform web service templates for independent production and staging apps.
 - Public `/privacy`, `/terms`, and `/data-deletion` routes and a shared ownership footer.
 - GitHub Actions checks for lint, type checking, and production build.
+- Prisma schema and migrations for the Milestone 2 identity, workspace, List,
+  session, and invitation foundation.
+- A minimal `/api/health/database` readiness endpoint that reports only
+  `ok`/`unavailable`, never connection details or query errors.
+- An authenticated `/lists` dashboard, Owner-only List CRUD, team permission
+  management, and a deliberately disconnected Page-management shell.
 
 ## Local verification (for contributors and CI)
 
@@ -17,9 +23,16 @@ The owner does not need to maintain a local environment; these commands are for 
 npm install --no-audit --no-fund
 npm run lint
 npm run typecheck
+npm run test:authorization
+npm run test:invitations
+npm run test:lists
 npm run build
+npm run db:validate
 npm start
 ```
+
+`npm run build` automatically regenerates Prisma Client before compiling so
+cached App Platform dependencies cannot leave the build using an older schema.
 
 ## Milestone 1 deployment runbook
 
@@ -102,14 +115,66 @@ The pages intentionally do not invent a support email. Before public launch, Haw
 
 Feature branch → pull request and CI → `develop` → staging smoke test → intentional release pull request → `main` → production. Production is not an experimental environment. Milestone 2 will add separate PostgreSQL resources and pre-deploy Prisma migrations only after this foundation is verified.
 
+## Milestone 2 security design
+
+The implementation contract for authentication, workspace and per-List
+authorization, personal-data isolation, and secure no-email invitations is in
+[`docs/milestone-2-security-design.md`](docs/milestone-2-security-design.md).
+Milestone 2 database and authentication work must preserve that document's
+default-deny permission matrix and invitation threat-model controls.
+
+## Database and migrations
+
+Prisma uses two environment-specific PostgreSQL connections:
+
+- `DATABASE_URL` is the encrypted pooled connection used by the running web
+  application.
+- `DIRECT_URL` is the encrypted direct administrative connection used only by
+  the controlled `prisma migrate deploy` deployment step.
+- `RUNTIME_DATABASE_USER` is the non-secret, environment-specific PostgreSQL
+  role that receives only the schema usage and data access needed by the web
+  application after migrations run.
+
+Never run development migrations against staging or production. Create and
+review migration SQL in the repository, then apply checked-in migrations with
+`npm run db:migrate:deploy`, followed by `npm run db:grant:runtime` from the
+same isolated pre-deploy job. In that job, both database URLs use its encrypted
+direct administrative connection; the web service retains only its pooled
+runtime URL. Production and staging must use different clusters, databases,
+users, pools, and values for all database configuration.
+
+`GET /api/health/database` performs a server-side `SELECT 1` through the web
+service's runtime pool. It returns HTTP 200 with `{"status":"ok"}` or HTTP 503
+with `{"status":"unavailable"}`, disables response caching, and intentionally
+does not expose database identifiers or errors.
+
+## Secure team invitations
+
+Workspace Owners manage invitations at `/team`. Invitation links contain 256
+bits of random token material, expire after seven days, and are displayed only
+when created or replaced. PostgreSQL stores only a domain-separated token hash.
+Creating a replacement revokes earlier pending invitations for the same
+workspace and normalized email, while explicit revocation leaves any already
+redeemed membership unchanged.
+
+The `/invite/[token]` redemption route supports an existing account or
+invitation-bound account creation. Redemption requires an exact normalized
+email match and atomically consumes the invitation, creates or associates the
+Member workspace membership, and applies initial Viewer/Manager permissions.
+The route sends `no-referrer`, `noindex`, and `no-store` headers and records
+only hashed signals for its bounded attempt limiter.
+
 ## Configuration
 
-| Variable | Milestone 1 use |
+| Variable | Use |
 | --- | --- |
 | `APP_URL` | Exact environment-specific canonical HTTPS origin. |
 | `NODE_ENV` | `production` in deployed applications. |
+| `DATABASE_URL` | Encrypted environment-specific pooled runtime PostgreSQL URL. |
+| `DIRECT_URL` | Encrypted environment-specific direct migration PostgreSQL URL; never exposed to runtime browser code. |
+| `RUNTIME_DATABASE_USER` | Non-secret database role name that receives runtime grants after migrations. |
 
-Store values in DigitalOcean environment configuration. Never commit `.env` files or credentials. Future database, authentication, and Meta variables described in the requirements are intentionally not introduced in this milestone.
+Store values in DigitalOcean environment configuration. Never commit `.env` files or credentials. Authentication and Meta variables are introduced only with the features that require them.
 
 ## Troubleshooting
 
@@ -121,4 +186,7 @@ Store values in DigitalOcean environment configuration. Never commit `.env` file
 
 ## Deferred by design
 
-PostgreSQL, Prisma migrations, authentication, owner bootstrap, timezone settings, list functionality, jobs, backups, and every Meta capability belong to later milestones. Meta setup or integration must not begin until the deployed foundation, canonical domain, HTTPS, compliance pages, ownership language, and isolated staging app have been verified.
+Meta API integration, ingestion jobs, analytics, Top Posts, Saved Posts, and
+operational backup tooling remain deferred to their later milestones. The Page
+area intentionally reports that Meta is not connected rather than displaying
+placeholder source data.
