@@ -8,6 +8,61 @@
   --line: rgba(23, 34, 30, 0.18);
 }
 
+.auth-panel {
+  margin: 4rem auto;
+  max-width: 32rem;
+}
+
+.account-panel {
+  min-height: 28rem;
+}
+
+.account-panel h1 {
+  font-size: clamp(3rem, 7vw, 5.5rem);
+  margin-bottom: 1.5rem;
+}
+
+.sign-out-button {
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+.auth-form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.auth-form label {
+  display: grid;
+  font-weight: 700;
+  gap: 0.4rem;
+}
+
+.auth-form input {
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  font: inherit;
+  padding: 0.75rem;
+}
+
+.auth-form button {
+  background: var(--ink);
+  border: 0;
+  border-radius: 999px;
+  color: white;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 800;
+  padding: 0.8rem 1.25rem;
+}
+
+.auth-form button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 * { box-sizing: border-box; }
 html { background: var(--paper); color: var(--ink); }
 body { margin: 0; font-family: Arial, Helvetica, sans-serif; line-height: 1.6; }
@@ -65,4 +120,3 @@ h1, h2, h3 { font-family: Georgia, 'Times New Roman', serif; font-weight: 500; l
   .site-footer p { text-align: left; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; } }
-
