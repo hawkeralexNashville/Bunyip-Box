@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email           String
+  normalizedEmail String   @unique(map: "users_normalized_email_key")
+  name            String
+  passwordHash    String
+  timezone        String   @default("America/Chicago")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  sessions            Session[]
+  memberships         WorkspaceMembership[]
+  ownedWorkspaces     Workspace[]            @relation("WorkspaceOwner")
+  redeemedInvitations WorkspaceInvitation[]  @relation("InvitationRedeemer")
+
+  @@map("users")
+}
+
+model Session {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @db.Uuid
+  tokenHash String    @unique(map: "sessions_token_hash_key") @db.Char(64)
+  expiresAt DateTime
+  lastSeenAt DateTime @default(now())
+  revokedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt], map: "sessions_user_id_expires_at_idx")
+  @@index([expiresAt], map: "sessions_expires_at_idx")
+  @@map("sessions")
+}
+
+model Workspace {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  ownerUserId String   @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner       User                  @relation("WorkspaceOwner", fields: [ownerUserId], references: [id], onDelete: Restrict)
+  memberships WorkspaceMembership[]
+  lists       List[]
+  invitations WorkspaceInvitation[]
+
+  @@map("workspaces")
+}
+
+model WorkspaceMembership {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId String   @db.Uuid
+  userId      String   @db.Uuid
+  role        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace      Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listPermissions ListPermission[]
+  createdInvitations WorkspaceInvitation[] @relation("InvitationCreator")
+
+  @@unique([workspaceId, userId], map: "workspace_memberships_workspace_id_user_id_key")
+  @@unique([id, workspaceId], map: "workspace_memberships_id_workspace_id_key")
+  @@index([userId], map: "workspace_memberships_user_id_idx")
+  @@map("workspace_memberships")
+}
+
+model List {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId String   @db.Uuid
+  name        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  workspace            Workspace                  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  permissions          ListPermission[]
+  invitationPermissions InvitationListPermission[]
+
+  @@unique([workspaceId, name], map: "lists_workspace_id_name_key")
+  @@unique([id, workspaceId], map: "lists_id_workspace_id_key")
+  @@map("lists")
+}
+
+model ListPermission {
+  workspaceId String   @db.Uuid
+  listId      String   @db.Uuid
+  membershipId String  @db.Uuid
+  role        String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  list       List                @relation(fields: [listId, workspaceId], references: [id, workspaceId], onDelete: Cascade)
+  membership WorkspaceMembership @relation(fields: [membershipId, workspaceId], references: [id, workspaceId], onDelete: Cascade)
+
+  @@id([listId, membershipId])
+  @@index([workspaceId, membershipId], map: "list_permissions_workspace_id_membership_id_idx")
+  @@map("list_permissions")
+}
+
+model WorkspaceInvitation {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId     String    @db.Uuid
+  creatorMembershipId String @db.Uuid
+  intendedEmail   String
+  intendedName    String?
+  tokenHash       String    @unique(map: "workspace_invitations_token_hash_key") @db.Char(64)
+  tokenVersion    Int       @default(1)
+  expiresAt       DateTime
+  revokedAt       DateTime?
+  redeemedAt      DateTime?
+  redeemedByUserId String?  @db.Uuid
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  workspace      Workspace                  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  creator        WorkspaceMembership        @relation("InvitationCreator", fields: [creatorMembershipId, workspaceId], references: [id, workspaceId], onDelete: Restrict)
+  redeemedBy     User?                      @relation("InvitationRedeemer", fields: [redeemedByUserId], references: [id], onDelete: Restrict)
+  listPermissions InvitationListPermission[]
+
+  @@unique([id, workspaceId], map: "workspace_invitations_id_workspace_id_key")
+  @@index([workspaceId, intendedEmail], map: "workspace_invitations_workspace_id_intended_email_idx")
+  @@index([workspaceId, expiresAt], map: "workspace_invitations_workspace_id_expires_at_idx")
+  @@map("workspace_invitations")
+}
+
+model InvitationRedemptionAttempt {
+  id                 String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tokenHash          String   @db.Char(64)
+  attemptedEmailHash String?  @db.Char(64)
+  succeeded          Boolean  @default(false)
+  attemptedAt        DateTime @default(now())
+
+  @@index([tokenHash, attemptedAt], map: "invitation_redemption_attempts_token_hash_attempted_at_idx")
+  @@map("invitation_redemption_attempts")
+}
+
+model InvitationListPermission {
+  invitationId String @db.Uuid
+  workspaceId  String @db.Uuid
+  listId       String @db.Uuid
+  role         String
+
+  invitation WorkspaceInvitation @relation(fields: [invitationId, workspaceId], references: [id, workspaceId], onDelete: Cascade)
+  list       List                @relation(fields: [listId, workspaceId], references: [id, workspaceId], onDelete: Cascade)
+
+  @@id([invitationId, listId])
+  @@index([workspaceId, listId], map: "invitation_list_permissions_workspace_id_list_id_idx")
+  @@map("invitation_list_permissions")
+}

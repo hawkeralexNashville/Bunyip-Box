@@ -1,6 +1,11 @@
 import Link from "next/link";
 
-export default function Home() {
+import { getCurrentUser } from "@/lib/auth/session";
+
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const user = await getCurrentUser();
   return (
     <div className="home">
       <section className="hero">
@@ -12,7 +17,9 @@ export default function Home() {
             public content and turning a busy feed into a useful library.
           </p>
           <div className="hero-actions">
-            <span className="button button-primary">Private access coming soon</span>
+            <Link className="button button-primary" href={user ? "/account" : "/login"}>
+              {user ? "Open your workspace" : "Sign in"}
+            </Link>
             <Link className="button button-secondary" href="/privacy">How we handle data</Link>
           </div>
         </div>
@@ -38,4 +45,3 @@ export default function Home() {
     </div>
   );
 }
-
