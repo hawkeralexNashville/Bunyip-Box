@@ -28,6 +28,9 @@ npm run db:validate
 npm start
 ```
 
+`npm run build` automatically regenerates Prisma Client before compiling so
+cached App Platform dependencies cannot leave the build using an older schema.
+
 ## Milestone 1 deployment runbook
 
 External infrastructure has **not** been assumed or marked complete. Follow these steps in order.
